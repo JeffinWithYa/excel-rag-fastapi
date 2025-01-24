@@ -4,3 +4,4 @@ python-dotenv
 llama-index
 llama-parse
 python-multipart
+nest-asyncio

@@ -6,6 +6,10 @@ from llama_index.llms.openai import OpenAI
 from llama_index.core import VectorStoreIndex
 from llama_parse import LlamaParse
 from llama_index.core.node_parser import MarkdownElementNodeParser
+import nest_asyncio
+
+# Apply nest_asyncio at the start
+nest_asyncio.apply()
 
 load_dotenv()
 
@@ -34,14 +38,14 @@ async def add_document(file: UploadFile):
             content = await file.read()
             buffer.write(content)
 
-        # Parse document
-        new_documents = parser.load_data(temp_path)
+        # Parse document - using aload_data instead of load_data
+        new_documents = await parser.aload_data(temp_path)
         documents.extend(new_documents)
 
         # Update index
         nodes = node_parser.get_nodes_from_documents(documents)
         base_nodes, objects = node_parser.get_nodes_and_objects(nodes)
-        index = VectorStoreIndex(nodes=base_nodes + objects, llm=llm)
+        index = await VectorStoreIndex.acreate(nodes=base_nodes + objects, llm=llm)
 
         # Cleanup
         os.remove(temp_path)
@@ -65,7 +69,7 @@ async def query_documents(query: str):
         raise HTTPException(status_code=400, detail="No documents have been indexed")
 
     query_engine = index.as_query_engine(similarity_top_k=5, llm=llm)
-    response = query_engine.query(query)
+    response = await query_engine.aquery(query)
 
     return {
         "response": str(response),
