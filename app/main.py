@@ -38,14 +38,14 @@ async def add_document(file: UploadFile):
             content = await file.read()
             buffer.write(content)
 
-        # Parse document - using aload_data instead of load_data
+        # Parse document
         new_documents = await parser.aload_data(temp_path)
         documents.extend(new_documents)
 
-        # Update index
-        nodes = node_parser.get_nodes_from_documents(documents)
+        # Update index - matching the notebook approach
+        nodes = node_parser.get_nodes_from_documents(documents[:5])
         base_nodes, objects = node_parser.get_nodes_and_objects(nodes)
-        index = await VectorStoreIndex.acreate(nodes=base_nodes + objects, llm=llm)
+        index = VectorStoreIndex(nodes=base_nodes + objects, llm=llm)
 
         # Cleanup
         os.remove(temp_path)
@@ -64,12 +64,12 @@ async def delete_documents():
 
 
 @app.post("/query/")
-async def query_documents(query: str):
+async def query_documents(query: Query):
     if not index:
         raise HTTPException(status_code=400, detail="No documents have been indexed")
 
     query_engine = index.as_query_engine(similarity_top_k=5, llm=llm)
-    response = await query_engine.aquery(query)
+    response = query_engine.query(query.query)
 
     return {
         "response": str(response),
