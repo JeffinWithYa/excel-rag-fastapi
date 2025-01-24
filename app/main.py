@@ -7,6 +7,7 @@ from llama_index.core import VectorStoreIndex
 from llama_parse import LlamaParse
 from llama_index.core.node_parser import MarkdownElementNodeParser
 import nest_asyncio
+from pydantic import BaseModel
 
 # Apply nest_asyncio at the start
 nest_asyncio.apply()
@@ -25,6 +26,11 @@ llm = OpenAI(model="gpt-4o-mini")
 node_parser = MarkdownElementNodeParser(llm=llm, num_workers=4)
 documents = []
 index = None
+
+
+# Add this class definition before the query_documents endpoint
+class Query(BaseModel):
+    query: str
 
 
 @app.post("/documents/")
